@@ -1,0 +1,13 @@
+.DS_Store
+_env*/
+.flaskenv
+*.pyc
+*.pyo
+dist/
+build/
+*.egg
+*.egg-info/
+_mailinglist
+.cache/
+.pytest_cache/
+.idea/

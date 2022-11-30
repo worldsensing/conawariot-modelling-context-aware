@@ -1,0 +1,40 @@
+version: '3.7'
+
+services:
+  # Backend
+  backend_demo_api:
+    image: phd/cloud_api_modelling_context_aware:1.0.0-RC1
+    env_file:
+      - ENV/api.env
+    environment:
+      - FLASK_DEV_ENV=false
+    depends_on:
+      - postgres
+    ports:
+      - "5001:5000"
+    networks:
+      - private
+    restart: on-failure
+
+  # Database
+  postgres:
+    image: postgres:11.18-alpine
+    volumes:
+      - /var/opt/api_modelling_local/pg_data:/var/lib/postgresql/data/pgdata
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - "5432:5432"
+    networks:
+      - private
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    restart: on-failure
+
+networks:
+  private:
+    driver: bridge

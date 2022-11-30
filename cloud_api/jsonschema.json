@@ -1,0 +1,188 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "",
+  "description": "",
+  "type": "object",
+  "definitions": {
+    "thing_type": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "Inclinometer"
+        },
+        "data_type": {
+          "type": "string",
+          "enum": [
+            "obs_a",
+            "obs_b"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "data_type"
+      ]
+    },
+    "thing": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "ABC-1001"
+        },
+        "category": {
+          "type": "string",
+          "$ref": "#/definitions/thing_type/properties/name"
+        },
+        "location": {
+          "type": "string",
+          "$ref": "#/definitions/location/properties/name"
+        }
+      },
+      "required": [
+        "name",
+        "category"
+      ]
+    },
+    "observation": {
+      "description": "",
+      "type": "object",
+      "properties": {
+        "thing_name": {
+          "type": "string",
+          "$ref": "#/definitions/thing/properties/name"
+        },
+        "time_start": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2020-04-01T10:54:03+00:00"
+        }
+      },
+      "required": [
+        "thing_name",
+        "time_start"
+      ]
+    },
+    "observation_a": {
+      "description": "",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/observation"
+        },
+        {
+          "properties": {
+            "value": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          "required": [
+            "value"
+          ]
+        }
+      ]
+    },
+    "observation_b": {
+      "description": "",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/observation"
+        },
+        {
+          "properties": {
+            "value": {
+              "type": "number",
+              "example": 1.0
+            }
+          },
+          "required": [
+            "value"
+          ]
+        }
+      ]
+    },
+    "context_aware_rule": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "ContextAwareRule1"
+        },
+        "query": {
+          "type": "string",
+          "example": "SELECT * FROM Event where thing_name = 'ABC-1001'"
+        },
+        "executing": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "name",
+        "query"
+      ]
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "Apartment"
+        },
+        "latlng": {
+          "type": "string",
+          "example": "41.2, 2.1"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  "properties": {
+    "thing_type": {
+      "description": "",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/thing_type"
+      }
+    },
+    "thing": {
+      "description": "A thing/sensor to be monitored",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/thing"
+      }
+    },
+    "observation": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "title": "obs_a",
+            "$ref": "#/definitions/observation_a"
+          },
+          {
+            "title": "event_b",
+            "$ref": "#/definitions/observation_b"
+          }
+        ]
+      }
+    },
+    "context_aware_rule": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/context_aware_rule"
+      }
+    },
+    "location": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/location"
+      }
+    }
+  }
+}
