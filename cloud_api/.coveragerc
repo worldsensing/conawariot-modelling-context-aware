@@ -1,5 +1,0 @@
-[run]
-omit =
-    env*/**
-[report]
-include=*/source/*

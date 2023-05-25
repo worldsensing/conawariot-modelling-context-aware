@@ -1,23 +1,11 @@
-FROM python:3.9.15-slim-buster AS build
+FROM python:3.11.2-slim
 
-COPY ./requirements/common.txt requirements.txt
+WORKDIR /code
 
-RUN apt-get update &&  \
-    apt-get -y --no-install-recommends install \
-        # psycopg2
-        gcc
+COPY ./requirements.txt /code/requirements.txt
 
-RUN pip install -r ./requirements.txt --no-cache-dir --user
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-FROM python:3.9.15-slim-buster
+COPY ./app /code/app
 
-WORKDIR /opt/cloud_api
-
-# Recover information from first multi-stage build
-COPY --from=build /root/.local /usr/local
-
-RUN mkdir -p source/
-COPY source source
-COPY scripts/run_app.sh run_app.sh
-
-CMD ["sh", "/opt/cloud_api/run_app.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]

@@ -1,29 +1,39 @@
-# cloud_api
+# Backend
 
-This project contains a `Python Flask` API and also a `PostreSQL` database. Run using `Docker`.
+## Setup
 
-A `Swagger` file and a `jsonschema` file are also provided for this project, in this same folder.
+### Dependencies
 
-## Requirements
+If you plan running the backend locally (without Docker) or your idea is to run the tests:
 
-- Docker
-- Docker-compose
+Run `pip install -r requirements.txt` to install python dependencies.
 
-## Setup & Usage
+### Create the Database
 
-### Run project
+Execute the `setup_db.sh` file to set up the database tables.
 
-Execute in terminal
+## Run
 
-- `sh setup_db.sh`
-- `make run`
+After setup, run `make setup` and then `make start`.
 
-Code is then available at `http:\\localhost:5001`.
+## Tests
 
-### Run tests
+Just run `pytest`
 
-Execute in terminal:
+----
+To have the FastAPI backend running, a database has to be created in the PostgreSQL container,
+to do so:
 
-- `sh setup_db_test.sh`
-- `make setup-tests`
-- `make run-tests`
+Open `localhost:5050`. The user and password are the ones that are shown in the `docker-compose.yml`.
+
+To connect to the postgres database. Click in `Add New Server` and add the following information
+in the `Connection` tab:
+
+```bash
+Host name/address: postgresdb
+Port: 5432
+Maintenance database: postgres
+Username: postgres
+Password: postgres
+Role:
+Service:

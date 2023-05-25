@@ -4,14 +4,16 @@ from threading import Thread
 import schedule
 from flask import Flask
 
-from __init__ import SENSOR_CONFIGURED
+from __init__ import FLASK_ENABLED, SENSOR_CONFIGURED
 from api import api
 from connector_grovepi import pin_mode, send_digital_value
+from grove import read_sensor_tilt
 
-app = Flask(__name__)
-app.register_blueprint(api)
+if FLASK_ENABLED:
+    app = Flask(__name__)
+    app.register_blueprint(api)
 
-if SENSOR_CONFIGURED == "TILT":
+if SENSOR_CONFIGURED == "TILT_B_INCL":
     TILT_SENSOR = 1  # Analog port 1
     RED_LED = 2  # Digital port 2
     RED_LED_THRESHOLD = 100
@@ -29,14 +31,16 @@ def run_schedule():
 if __name__ == "__main__":
     print("Starting up code...")
 
-    if SENSOR_CONFIGURED == "TILT":
-        print("Setup Scheduler...")
-        # read_sensor_information()
+    print("Sensor configured is: " + SENSOR_CONFIGURED)
+    if SENSOR_CONFIGURED == "TILT_B_INCL":
+        read_sensor_tilt()
 
-        # schedule.every(3).seconds.do(read_sensor_information)
+        schedule.every(1).seconds.do(read_sensor_tilt)
 
-        t = Thread(target=run_schedule)
-        t.start()
+    print("Setup Scheduler...")
+    t = Thread(target=run_schedule)
+    t.start()
 
-    print("Setup Flask server...")
-    app.run(host="0.0.0.0", port=8001, use_reloader=False)
+    if FLASK_ENABLED:
+        print("Setup Flask server...")
+        app.run(host="0.0.0.0", port=8001, use_reloader=False)

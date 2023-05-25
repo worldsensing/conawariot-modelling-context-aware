@@ -1,39 +1,43 @@
-version: '3.7'
+version: '3.9'
 
 services:
-  # Backend
-  backend_demo_api:
-    image: phd/cloud_api_modelling_context_aware:1.0.0-RC1
-    env_file:
-      - ENV/api.env
-    environment:
-      - FLASK_DEV_ENV=false
-    depends_on:
-      - postgres
+  backend:
+    image: ${DOCKER_NAME}
+    build:
+      context: .
+      dockerfile: ./Dockerfile
     ports:
-      - "5001:5000"
+      - "5000:80"
+    env_file:
+      - ENV/local.env
     networks:
       - private
-    restart: on-failure
 
-  # Database
   postgres:
-    image: postgres:11.18-alpine
-    volumes:
-      - /var/opt/api_modelling_local/pg_data:/var/lib/postgresql/data/pgdata
+    image: postgres:15.0-alpine
+    restart: unless-stopped
     environment:
       - PGDATA=/var/lib/postgresql/data/pgdata
-      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     ports:
-      - "5432:5432"
+      - '5432:5432'
+    volumes:
+      - /var/opt/api_modelling_local/pg_data:/var/lib/postgresql/data/pgdata
     networks:
       - private
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres" ]
-      interval: 30s
-      timeout: 30s
-      retries: 3
-    restart: on-failure
+
+  pgadmin:
+    container_name: cloud_api_pgadmin
+    image: dpage/pgadmin4:6.21
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=mvila@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=marcvila
+    ports:
+      - "5050:80"
+    networks:
+      - private
 
 networks:
   private:

@@ -24,7 +24,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "iteration": 1669392030941,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -40,6 +39,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "Value",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -118,7 +119,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT \nobservation.time_start as \"time\",\nobs_integer.value as \"value\"\nFROM observation\nINNER JOIN obs_integer ON obs_integer.ID=observation.ID\nWHERE observation.sensor_name = '$sensor_name'",
+          "rawSql": "SELECT \nobservation.time_start as \"time\",\nobservation.value_int as \"value\"\nFROM observation\nWHERE observation.sensor_name = '$sensor_name'",
           "refId": "A",
           "select": [
             [
@@ -149,7 +150,7 @@
     }
   ],
   "refresh": false,
-  "schemaVersion": 34,
+  "schemaVersion": 37,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -157,8 +158,8 @@
       {
         "current": {
           "selected": false,
-          "text": "TiltSensor",
-          "value": "TiltSensor"
+          "text": "54782_CPU",
+          "value": "54782_CPU"
         },
         "hide": 0,
         "includeAll": false,
@@ -179,8 +180,8 @@
     ]
   },
   "time": {
-    "from": "2022-11-24T14:55:57.211Z",
-    "to": "2022-11-24T17:00:30.719Z"
+    "from": "now-3h",
+    "to": "now"
   },
   "timepicker": {
     "refresh_intervals": [

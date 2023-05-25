@@ -1,0 +1,10 @@
+fastapi==0.95.0
+pydantic==1.10.7
+uvicorn==0.21.1
+sqlmodel==0.0.8
+psycopg2-binary==2.9.6
+python-dotenv==1.0.0
+
+# For testing
+httpx==0.23.3
+pytest==7.2.2

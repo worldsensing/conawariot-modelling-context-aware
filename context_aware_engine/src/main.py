@@ -2,14 +2,13 @@ import time
 
 import schedule
 
-from repository import get_context_aware_rules
+from repository import execute_context_aware_rules
 
 if __name__ == "__main__":
     print("Starting up code...")
 
-    get_context_aware_rules()
-
-    schedule.every(15).seconds.do(get_context_aware_rules)
+    execute_context_aware_rules()
+    schedule.every(1).minute.do(execute_context_aware_rules)
 
     while True:
         schedule.run_pending()

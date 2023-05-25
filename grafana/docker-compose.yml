@@ -2,6 +2,7 @@ version: '3.9'
 
 services:
   grafana:
+    container_name: cloud_api_grafana
     build:
       context: .
       dockerfile: Dockerfile

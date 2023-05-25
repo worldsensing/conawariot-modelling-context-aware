@@ -1,98 +1,104 @@
 import json
+from typing import List
 
 import requests
 
-from src import BASE_URL, API_CONTEXT_AWARE_RULES_ENDPOINT, \
-    API_CONTEXT_AWARE_RULES_COMPONENT_ENDPOINT, API_SENSORS_ENDPOINT, \
-    API_SENSOR_OBSERVATIONS_ENDPOINT, API_EVENT_RULE_TYPE_NAME_ENDPOINT, API_ACTUATOR_ENDPOINT, \
-    API_ACTUATION_ENDPOINT, actuators
+from src import BASE_URL, API_SENSORS_ENDPOINT, API_SENSOR_OBSERVATIONS_ENDPOINT, \
+    API_ACTUATOR_ENDPOINT, API_ACTUATION_ENDPOINT, actuators, core, utils, \
+    API_PROCEDURE_TYPE_NAME_ENDPOINT
 
 
-def get_context_aware_rules():
-    print("Sending GET to obtain ALL Context Aware Rules...")
-    url = f"{BASE_URL}{API_CONTEXT_AWARE_RULES_ENDPOINT}"
-    print(url)
+def check_event_rule(event_rule: dict) -> bool:
+    er_type_obj = core.get_event_rule_type(event_rule["event_rule_type_name"])
 
-    r = requests.get(url)
-    context_aware_rules = json.loads(r.content)["data"]
-    print(context_aware_rules)
+    er_type = er_type_obj["event_rule_type"]
+    er_comparation_type = er_type_obj["event_rule_comparation_type"]
+    er_value_type = er_type_obj["event_rule_value_type"]
+
+    sensor_1_data = core.get_last_observation_from_sensor_name(er_value_type,
+                                                               event_rule["sensor_1_name"])
+    value_2_data = None
+
+    if er_type == "SENSOR_CONSTANT":
+        value_2_data = core.get_constant_value(er_value_type, event_rule)
+    elif er_type == "SENSOR_SENSOR":
+        value_2_data = core.get_last_observation_from_sensor_name(er_value_type,
+                                                                  event_rule["sensor_2_name"])
+
+    triggered = True
+    if er_comparation_type == "MORE_THAN":
+        triggered = sensor_1_data > value_2_data
+    elif er_comparation_type == "LESS_THAN":
+        triggered = sensor_1_data < value_2_data
+    elif er_comparation_type == "EQUALS":
+        triggered = sensor_1_data == value_2_data
+    elif er_comparation_type == "NOT_EQUALS":
+        triggered = sensor_1_data != value_2_data
+
+    print(f"EventRule {er_type} and {er_comparation_type} Checked: "
+          f"ValueA is {sensor_1_data} and ValueB is {value_2_data}")
+
+    print(f"Result is: {triggered}")
+
+    return triggered
+
+
+def execute_response_procedures(response_procedures: List):
+    for response_procedure in response_procedures:
+        actuator_name = response_procedure["actuator_name"]
+
+        url = f"{BASE_URL}{API_ACTUATOR_ENDPOINT}{actuator_name}"
+        print(f"Send GET to obtain Actuator {actuator_name}: {url}")
+        r = requests.get(url)
+        actuator = json.loads(r.content)
+
+        url = f"{BASE_URL}{API_ACTUATION_ENDPOINT}"
+        print(f"Send POST to create Actuation: {url}")
+        body = {
+            "time_start": utils.get_current_datetime_str(),
+            "actuator_name": actuator_name,
+            "actuatable_property_name": actuator["actuatable_property_name"],
+        }
+        r = requests.post(url, json=body)
+        actuation = json.loads(r.content)
+        print(actuation)
+
+        procedure_type = response_procedure['procedure_type_name']
+        url = f"{BASE_URL}{API_PROCEDURE_TYPE_NAME_ENDPOINT}{procedure_type}"
+        print(f"Send GET to obtain ProcedureType {procedure_type}: {url}")
+        r = requests.get(url)
+        procedure = json.loads(r.content)
+
+        if procedure["procedure_type"] == "EMAIL":
+            actuators.send_email()
+        elif procedure["procedure_type"] == "HTTP":
+            actuators.send_http()
+
+
+def execute_context_aware_rules():
+    context_aware_rules = core.get_context_aware_rules()
 
     for context_aware_rule in context_aware_rules:
         if context_aware_rule["executing"] is True:
-            ca_rule = get_context_aware_rule_components(context_aware_rule["name"])
-            ca_rule_components = ca_rule["components"]
+            ca_event_rules = core.get_event_rules_from_context_aware_rule(
+                context_aware_rule["name"])
+            ca_condition_rules = core.get_condition_rules_from_context_aware_rule(
+                context_aware_rule["name"])
 
+            triggered = True
             # Simple Rule
-            ca_rule_conditions = ca_rule_components["conditions"]
-            if ca_rule_conditions is None:
-                ca_rule_event_rule = ca_rule_components["events"][0]
-                continue
-
+            if not ca_condition_rules:
+                triggered = check_event_rule(ca_event_rules[0])
             # Complex Rule
-            for condition in ca_rule_conditions:
-                # The condition is made up from two EventRules
-                if condition["event_rule_1_name"] is not None \
-                        and condition["event_rule_2_name"] is not None:
-                    ca_rule_event_rule_1 = ca_rule_components["events"][0]
-                    ca_rule_event_rule_2 = ca_rule_components["events"][1]
-                    sensor_1_observations = get_sensor_observations(
-                        ca_rule_event_rule_1["sensor_1_name"])
-                    # TODO Take into account Sensor 1 and the Condition comparator
+            else:
+                # TODO
+                pass
 
-                    event_rule_type = get_event_rule_type(
-                        ca_rule_event_rule_1["event_rule_type_name"])
+            if triggered:
+                ca_response_procedures = core.get_response_procedures_from_context_aware_rule(
+                    context_aware_rule["name"])
 
-                    # TODO Accept more than one
-                    ca_rule_response_procedures = ca_rule_components["response_procedures"][0]
-
-                    if event_rule_type["event_rule_type"] == "SENSOR_CONSTANT":
-                        if event_rule_type["event_rule_comparation_type"] == "MORE_THAN":
-                            if event_rule_type["event_rule_value_type"] == "INTEGER":
-                                last_observation = sensor_1_observations[-1]
-                                if last_observation["value"] > \
-                                        ca_rule_event_rule_1["value_to_compare_integer"]:
-                                    actuator_name = ca_rule_response_procedures["actuator_name"]
-                                    do_actuation(context_aware_rule["name"],
-                                                 last_observation["id"], actuator_name)
-                                else:
-                                    print("ContextAwareRule check DONE, threshold not exceeded")
-                    # TODO IMPLEMENT the rest of functions
-
-                # The condition is made up from one EventRule and one ConditionRule
-                elif condition["event_rule_1_name"] is not None \
-                        and condition["condition_rule_1_name"] is not None:
-                    pass
-
-                # The condition is made up from two ConditionRules
-                elif condition["condition_rule_1_name"] is not None \
-                        and condition["condition_rule_2_name"] is not None:
-                    pass
-
-    return context_aware_rules
-
-
-def get_context_aware_rule_components(context_aware_rule_name):
-    print(f"Sending GET to obtain {context_aware_rule_name} Context Aware Rule...")
-    url = f"{BASE_URL}{API_CONTEXT_AWARE_RULES_ENDPOINT}{context_aware_rule_name}{API_CONTEXT_AWARE_RULES_COMPONENT_ENDPOINT}"
-    print(url)
-
-    r = requests.get(url)
-    context_aware_rule = json.loads(r.content)["data"]
-    print(context_aware_rule)
-
-    return context_aware_rule
-
-
-def get_event_rule_type(event_rule_type_name):
-    print(f"Sending GET to obtain {event_rule_type_name} EventRuleType name...")
-    url = f"{BASE_URL}{API_EVENT_RULE_TYPE_NAME_ENDPOINT}{event_rule_type_name}"
-    print(url)
-
-    r = requests.get(url)
-    event_rule_type = json.loads(r.content)["data"]
-    print(event_rule_type)
-
-    return event_rule_type
+                execute_response_procedures(ca_response_procedures)
 
 
 def get_sensor_observations(sensor_name):
